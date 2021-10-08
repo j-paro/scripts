@@ -45,7 +45,7 @@ _usage() {
 _main() {
   if [[ -z "${1:-}" ]]
   then
-    awk -F ":" '$3 >= 0 {printf system("groups " $1)}' /etc/passwd
+    awk -F ":" '$3 >= 0 {system("groups " $1)}' /etc/passwd
   else
     if [[ "${1:-}" =~ ^-h|--help$  ]]
     then
