@@ -1,0 +1,153 @@
+#!/usr/bin/env bash
+set -o nounset
+set -o errexit
+set -o errtrace
+set -o pipefail
+IFS=$'\n\t'
+
+###############################################################################
+# Environment
+###############################################################################
+
+# $_ME
+#
+# This program's basename.
+_ME="$(basename "${0}")"
+
+###############################################################################
+# Help
+###############################################################################
+
+# _print_help()
+#
+# Usage:
+#   _print_help
+#
+# Description:
+#   Print the program help information.
+_print_help() {
+  cat <<HEREDOC
+Usage:
+  ${_ME}
+  ${_ME} -h | --help
+
+Options:
+  -h --help  Display this help information.
+HEREDOC
+}
+
+###############################################################################
+# Options
+#
+# NOTE: The `getops` builtin command only parses short options and BSD `getopt`
+# does not support long arguments (GNU `getopt` does), so the most portable
+# and clear way to parse options is often to just use a `while` loop.
+#
+# For a pure bash `getopt` function, try pure-getopt:
+#   https://github.com/agriffis/pure-getopt
+#
+# More info:
+#   http://wiki.bash-hackers.org/scripting/posparams
+#   http://www.gnu.org/software/libc/manual/html_node/Argument-Syntax.html
+#   http://stackoverflow.com/a/14203146
+#   http://stackoverflow.com/a/7948533
+#   https://stackoverflow.com/a/12026302
+#   https://stackoverflow.com/a/402410
+###############################################################################
+
+# Parse Options ###############################################################
+
+# Initialize program option variables.
+_PRINT_HELP=0
+_USE_DEBUG=0
+
+# Initialize additional expected option variables.
+_OPTION_X=0
+_SHORT_OPTION=
+_LONG_OPTION=
+
+# __get_option_value()
+#
+# Usage:
+#   __get_option_value <option> <value>
+#
+# Description:
+#  Given a flag (e.g., -e | --example) return the value or exit 1 if value
+#  is blank or appears to be another option.
+__get_option_value() {
+  local __arg="${1:-}"
+  local __val="${2:-}"
+
+  if [[ -n "${__val:-}" ]] && [[ ! "${__val:-}" =~ ^- ]]
+  then
+    printf "%s\\n" "${__val}"
+  else
+    _exit_1 printf "%s requires a valid argument.\\n" "${__arg}"
+  fi
+}
+
+while ((${#}))
+do
+  __arg="${1:-}"
+  __val="${2:-}"
+
+  case "${__arg}" in
+    -h|--help)
+      _PRINT_HELP=1
+      ;;
+    --debug)
+      _USE_DEBUG=1
+      ;;
+    -x|--option-x)
+      _OPTION_X=1
+      ;;
+    -o)
+      _SHORT_OPTION="$(__get_option_value "${__arg}" "${__val:-}")"
+      shift
+      ;;
+    --long-option)
+      _LONG_OPTION="$(__get_option_value "${__arg}" "${__val:-}")"
+      shift
+      ;;
+    --endopts)
+      # Terminate option parsing.
+      break
+      ;;
+    -*)
+      _exit_1 printf "Unexpected option: %s\\n" "${__arg}"
+      ;;
+  esac
+
+  shift
+done
+
+###############################################################################
+# Main
+###############################################################################
+
+# _main()
+#
+# Usage:
+#   _main [<options>]
+#
+# Description:
+#   Entry point for the program, handling basic option parsing and dispatching.
+_main() {
+  if ((_PRINT_HELP))
+  then
+    _print_help
+  else
+    if type -t wevtutil &> /dev/null
+    then
+        printf "Windows\\n"
+    elif type -t scutil &> /dev/null
+    then
+        printf "Mac\\n"
+    else
+        printf "Linux\\n"
+    fi
+  fi
+}
+
+# Call `_main` after everything has been defined.
+_main "$@"
